@@ -3,58 +3,29 @@ package microsvc
 import (
 	// "fmt"
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"runtime"
 )
 
 type MicroService struct {
-	resource *IResource `@Autowired:"*"`
+	resource *IResource  `@Autowired:"*"`
+	G_engine *gin.Engine `@Autowired:"*"`
 }
 
-type microServiceStatus struct {
-	Sys      uint64 `json:"sys"`
-	Alloc    uint64 `json:"alloc"`
-	Idle     uint64 `json:"idle"`
-	Released uint64 `json:"released"`
-}
-
-func (svc *MicroService) Run(addr string) {
+func (svc *MicroService) PostSummerConstruct() {
 	res := *svc.resource
 
-	if res.InReleaseMode() {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	r := gin.Default()
+	engine := svc.G_engine
 	prefix := res.PathPrefix()
 	param := res.GetParam()
 
 	aurl := "/" + prefix
 	iurl := aurl + "/:" + param
 
-	r.GET(aurl, res.GetAll)
-	r.GET(iurl, res.DoGet)
-	r.POST(aurl, res.DoPost)
-	r.PUT(iurl, res.DoPut)
-	r.DELETE(iurl, res.DoDelete)
-	r.DELETE(aurl, res.DeleteAll)
-
-	r.GET("/status", func(c *gin.Context) {
-		var m runtime.MemStats
-		var status microServiceStatus
-
-		runtime.ReadMemStats(&m)
-
-		status.Sys = m.HeapSys
-		status.Alloc = m.HeapAlloc
-		status.Idle = m.HeapIdle
-		status.Released = m.HeapReleased
-
-		c.JSON(http.StatusOK, status)
-	})
-
-	// we'll pass in configuration later
-	r.Run(addr)
+	engine.GET(aurl, res.GetAll)
+	engine.GET(iurl, res.DoGet)
+	engine.POST(aurl, res.DoPost)
+	engine.PUT(iurl, res.DoPut)
+	engine.DELETE(iurl, res.DoDelete)
+	engine.DELETE(aurl, res.DeleteAll)
 }
 
 func (svc *MicroService) Setresource(r interface{}) {
